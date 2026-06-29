@@ -44,5 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# API anahtarını gizle
+# API hide the keys
 lib/secrets.dart
