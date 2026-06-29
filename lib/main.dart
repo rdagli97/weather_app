@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:weather_app/models/weather.dart';
 import 'package:weather_app/secrets.dart';
 
 void main() {
@@ -30,8 +33,33 @@ class WeatherHomePage extends StatefulWidget {
 }
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
-  String _result = 'Press the button to fetch weather';
+  Weather? _weather;
   bool _isLoading = false;
+  String? _errorMessage;
+
+  Widget _buildContext() {
+    if(_isLoading) {
+      return const CircularProgressIndicator();
+    }
+
+    if (_errorMessage != null) {
+      return Text(_errorMessage!);
+    }
+
+    if (_weather != null) {
+      return Column(
+        children: [
+          Text(_weather!.cityName),
+          Text('${_weather!.temperature}°C'),
+          Text('Feels like ${_weather!.feelsLike}°C'),
+          Text(_weather!.description),
+          Text('Humidity: ${_weather!.humidity}%'),
+        ],
+      );
+    }
+
+    return const Text("Press the button to fetch weather");
+  }
 
   Future<void> _fetchWeather() async {
 
@@ -45,17 +73,19 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         setState(() {
-          _result = response.body;
+          _weather = Weather.fromJson(data);
+          _errorMessage = null;
         });
       } else {
         setState(() {
-          _result = 'Error: City not found (code ${response.statusCode})';
+          _errorMessage = 'Error: City not found (code ${response.statusCode})';
         });
       }
     } catch (e) {
       setState(() {
-        _result = 'Failed to connect. Check your internet connection';
+        _errorMessage = 'Failed to connect. Check your internet connection';
       });
     } finally {
       setState(() {
@@ -83,9 +113,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
                 child: const Text('Fetch Weather'),
               ),
               const SizedBox(height: 20),
-              _isLoading
-              ? const CircularProgressIndicator()
-              : Text(_result)
+              _buildContext(),
             ],
           ),
         ),
