@@ -31,17 +31,39 @@ class WeatherHomePage extends StatefulWidget {
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
   String _result = 'Press the button to fetch weather';
+  bool _isLoading = false;
 
   Future<void> _fetchWeather() async {
-    final url = Uri.parse('https://api.openweathermap.org/data/2.5/weather?q=Belgrade&appid=$openWeatherApiKey&units=metric');
-
-    final response = await http.get(url);
 
     setState(() {
-      _result = response.body;
+      _isLoading = true;
     });
 
-    print(_result);
+    final url = Uri.parse('https://api.openweathermap.org/data/2.5/weather?q=Belgrade&appid=$openWeatherApiKey&units=metric');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _result = response.body;
+        });
+      } else {
+        setState(() {
+          _result = 'Error: City not found (code ${response.statusCode})';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _result = 'Failed to connect. Check your internet connection';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
+    
   }
 
 
@@ -61,7 +83,9 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
                 child: const Text('Fetch Weather'),
               ),
               const SizedBox(height: 20),
-              Text(_result),
+              _isLoading
+              ? const CircularProgressIndicator()
+              : Text(_result)
             ],
           ),
         ),
