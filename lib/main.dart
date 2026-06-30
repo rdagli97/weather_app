@@ -33,6 +33,8 @@ class WeatherHomePage extends StatefulWidget {
 }
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
+  final TextEditingController _cityController = TextEditingController();
+
   Weather? _weather;
   bool _isLoading = false;
   String? _errorMessage;
@@ -47,14 +49,46 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     }
 
     if (_weather != null) {
-      return Column(
-        children: [
-          Text(_weather!.cityName),
-          Text('${_weather!.temperature}°C'),
-          Text('Feels like ${_weather!.feelsLike}°C'),
-          Text(_weather!.description),
-          Text('Humidity: ${_weather!.humidity}%'),
-        ],
+      final weather = _weather!;
+      return Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                weather.cityName,
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${weather.temperature.round()}°C',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(
+                    children: [
+                      const Icon(Icons.thermostat),
+                      Text('Feels like'),
+                      Text('${weather.feelsLike.round()}°C'),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      const Icon(Icons.water_drop),
+                      Text('Humidity'),
+                      Text('${weather.humidity}%'),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -62,12 +96,19 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   }
 
   Future<void> _fetchWeather() async {
+    final city = _cityController.text.trim();
+    if (city.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter a city name';
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    final url = Uri.parse('https://api.openweathermap.org/data/2.5/weather?q=Belgrade&appid=$openWeatherApiKey&units=metric');
+    final url = Uri.parse('https://api.openweathermap.org/data/2.5/weather?q=$city&appid=$openWeatherApiKey&units=metric');
 
     try {
       final response = await http.get(url);
@@ -108,6 +149,17 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              TextField(
+                controller: _cityController,
+                decoration: const InputDecoration(
+                  labelText: 'Enter a city name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_city),
+                ),
+                onSubmitted: (_) => _fetchWeather(),
+              ),
+              const SizedBox(height: 16),
+              // Fetch Weather Button
               ElevatedButton(
                 onPressed: _fetchWeather,
                 child: const Text('Fetch Weather'),
